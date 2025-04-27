@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .input-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        #task-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+        }
+        
+        #add-btn {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        #add-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .task-list {
+            list-style-type: none;
+        }
+        
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .task-item:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .task-text {
+            flex: 1;
+            word-break: break-word;
+        }
+        
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+            background-color: #e8f5e9;
+        }
+        
+        .task-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .complete-btn, .delete-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        
+        .complete-btn {
+            background-color: #2196f3;
+        }
+        
+        .complete-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .delete-btn {
+            background-color: #f44336;
+        }
+        
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Task Manager</h1>
+        <div class="input-container">
+            <input type="text" id="task-input" placeholder="Add a new task...">
+            <button id="add-btn">Add</button>
+        </div>
+        <ul class="task-list" id="task-list"></ul>
+        <div class="stats">
+            <span id="task-count">Total tasks: 0</span>
+            <span id="completed-count">Completed: 0</span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskInput = document.getElementById('task-input');
+            const addBtn = document.getElementById('add-btn');
+            const taskList = document.getElementById('task-list');
+            const taskCountSpan = document.getElementById('task-count');
+            const completedCountSpan = document.getElementById('completed-count');
+            
+            // Load tasks from localStorage
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            
+            // Render tasks on page load
+            renderTasks();
+            updateCounts();
+            
+            // Add task function
+            function addTask() {
+                const taskText = taskInput.value.trim();
+                if (taskText !== '') {
+                    const task = {
+                        id: Date.now(),
+                        text: taskText,
+                        completed: false
+                    };
+                    
+                    tasks.push(task);
+                    saveTasks();
+                    renderTask(task);
+                    updateCounts();
+                    
+                    taskInput.value = '';
+                    taskInput.focus();
+                }
+            }
+            
+            // Delete task function
+            function deleteTask(id) {
+                tasks = tasks.filter(task => task.id !== id);
+                saveTasks();
+                renderTasks();
+                updateCounts();
+            }
+            
+            // Toggle task completion
+            function toggleComplete(id) {
+                tasks = tasks.map(task => {
+                    if (task.id === id) {
+                        return { ...task, completed: !task.completed };
+                    }
+                    return task;
+                });
+                saveTasks();
+                renderTasks();
+                updateCounts();
+            }
+            
+            // Save tasks to localStorage
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+            
+            // Render all tasks
+            function renderTasks() {
+                taskList.innerHTML = '';
+                tasks.forEach(task => renderTask(task));
+            }
+            
+            // Render a single task
+            function renderTask(task) {
+                const li = document.createElement('li');
+                li.classList.add('task-item');
+                if (task.completed) {
+                    li.classList.add('completed');
+                }
+                
+                li.innerHTML = `
+                    <span class="task-text">${task.text}</span>
+                    <div class="task-buttons">
+                        <button class="complete-btn">${task.completed ? 'Undo' : 'Complete'}</button>
+                        <button class="delete-btn">Delete</button>
+                    </div>
+                `;
+                
+                const completeBtn = li.querySelector('.complete-btn');
+                completeBtn.addEventListener('click', () => toggleComplete(task.id));
+                
+                const deleteBtn = li.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', () => deleteTask(task.id));
+                
+                taskList.appendChild(li);
+            }
+            
+            // Update task counts
+            function updateCounts() {
+                const totalTasks = tasks.length;
+                const completedTasks = tasks.filter(task => task.completed).length;
+                
+                taskCountSpan.textContent = `Total tasks: ${totalTasks}`;
+                completedCountSpan.textContent = `Completed: ${completedTasks}`;
+            }
+            
+            // Event listeners
+            addBtn.addEventListener('click', addTask);
+            
+            taskInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTask();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
